@@ -16,7 +16,13 @@ class SufficiencyStatus(str, Enum):
 def _normalize_blocks(
     partition: Iterable[Iterable[Hashable]],
 ) -> tuple[frozenset[Hashable], ...]:
-    return tuple(frozenset(block) for block in partition)
+    blocks = [frozenset(block) for block in partition]
+    return tuple(
+        sorted(
+            blocks,
+            key=lambda block: (-len(block), tuple(sorted(map(repr, block)))),
+        )
+    )
 
 
 def _partition_integrity(
