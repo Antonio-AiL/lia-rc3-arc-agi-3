@@ -64,6 +64,19 @@ class ReverseBalanceTests(unittest.TestCase):
         self.assertGreater(decision.distance, 0)
         self.assertEqual(decision.selected_action, "A03")
 
+    def test_action_input_order_does_not_change_canonical_result(self) -> None:
+        forward = select_balance(HYPOTHESES, ACTIONS, (11, 11), fixture_predict)
+        reverse = select_balance(
+            HYPOTHESES, tuple(reversed(ACTIONS)), (11, 11), fixture_predict
+        )
+        self.assertEqual(forward.selected_action, reverse.selected_action)
+        self.assertEqual(forward.exact_matches, reverse.exact_matches)
+        self.assertEqual(forward.ranking, reverse.ranking)
+
+    def test_invalid_target_sum_is_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            select_balance(HYPOTHESES, ACTIONS, (10, 10), fixture_predict)
+
     def test_structural_identity_changes_task_sufficiency(self) -> None:
         hs = ("h1", "h2", "h3", "h4")
         task = {"h1": 0, "h2": 0, "h3": 1, "h4": 1}
@@ -96,6 +109,32 @@ class ReverseBalanceTests(unittest.TestCase):
             task=None,
         )
         self.assertEqual(state.sufficiency_status, SufficiencyStatus.UNRESOLVED)
+
+    def test_conflicting_partition_is_detected(self) -> None:
+        hs = ("h1", "h2", "h3")
+        state = build_semantic_state(
+            hs,
+            named_partition=("bad", ({"h1", "h2"}, {"h2", "h3"})),
+            task={"h1": 0, "h2": 0, "h3": 1},
+        )
+        self.assertEqual(state.sufficiency_status, SufficiencyStatus.CONFLICT)
+
+    def test_partition_block_order_does_not_change_semantic_version(self) -> None:
+        hs = ("h1", "h2", "h3", "h4")
+        task = {"h1": 0, "h2": 0, "h3": 1, "h4": 1}
+        first = build_semantic_state(
+            hs,
+            named_partition=("same", ({"h1", "h2"}, {"h3", "h4"})),
+            task=task,
+        )
+        second = build_semantic_state(
+            hs,
+            named_partition=("same", ({"h3", "h4"}, {"h1", "h2"})),
+            task=task,
+        )
+        self.assertEqual(first.sufficiency_status, SufficiencyStatus.SUFFICIENT)
+        self.assertEqual(first.version_id, second.version_id)
+        self.assertEqual(first.partitions, second.partitions)
 
 
 class ShadowIntegrationTests(unittest.TestCase):
