@@ -1,0 +1,23 @@
+name: LIA N07 semantic shadow
+
+on:
+  pull_request:
+    paths:
+      - "lia_core/semantic/**"
+      - "agent/my_agent_semantic.py"
+      - "tests/test_lia_n07_semantic.py"
+      - "scripts/termux/run_lia_n07_t03.sh"
+      - ".github/workflows/lia-n07-semantic.yml"
+  workflow_dispatch:
+
+jobs:
+  t03:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip numpy
+      - run: python -m unittest discover -s tests -p 'test_lia_n07_semantic.py' -v
+      - run: python -m compileall -q lia_core agent/my_agent_semantic.py tests/test_lia_n07_semantic.py
